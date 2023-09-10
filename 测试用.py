@@ -4,6 +4,10 @@ import torch.optim as optim
 from torchvision import datasets, models, transforms
 import os
 import random
+
+start_infer = False
+infer_all_cnn_output = []
+
 def extract_submatrices_from_tensor(tensor, a):
     k, m, n = tensor.size()
     if a > m or a > n:
@@ -164,6 +168,10 @@ class Random_Matrix(nn.Module):
             output = self.cnn[j](vector.unsqueeze(0))
             all_cnn_output[j, :] = output.squeeze(0)     #
         value = self.lstm(all_cnn_output)
+        if start_infer:
+            print("forward_all_cnn_output",all_cnn_output)
+            infer_all_cnn_output.append(all_cnn_output)
+            print("forward_all_cnn_output_value",value)
         return value
 
 
@@ -242,6 +250,7 @@ for j in range(1):
 
 
 # #模型训练
+start_infer = True
 all_test_output = []
 for i in range(40):
     inputs = X_test_tensor[i]
@@ -250,6 +259,8 @@ for i in range(40):
     predicted_class = torch.argmax(output).item()
     all_test_output.append(predicted_class)
 
+
+
 all_test_output = torch.tensor([all_test_output])
 print(all_test_output)
 
@@ -257,7 +268,13 @@ acu = torch.sum(all_test_output == y_test_tensor).item() / 580.0
 acu_percent = acu * 100
 print(acu_percent)
 
-
+#计算cos相似度
+for i in range(len(infer_all_cnn_output)):
+    for j in range(len(infer_all_cnn_output)):
+        x = infer_all_cnn_output[i]
+        y = infer_all_cnn_output[j]
+        similarity = F.cosine_similarity(x, y, dim=0)
+        print(i, j, similarity)
 
 
 
